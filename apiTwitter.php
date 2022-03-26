@@ -8,18 +8,21 @@
     class ApiTwitter{
         //const TWITER_ID_DOMAIN = 'https://id.twitch.tv/';
         const TWITER_API_DOMAIN = 'https://api.twitter.com/';
+        const AUTH1 = 'OAuth 1.0a'; //user context 
+        const AUTH2 = 'OAuth 2.0';  //app-only
 
         private $_bearerToken;
         private $_consumerKey;
         private $_consumerSecret;
+        private $_tokenSecret;
         private $_token;
 
-        public function __construct($bearerToken, $consumerKey, $consumerSecret, $tokenSecret='',$token=''){
-            $this ->_bearerToken = $bearerToken;
-            $this ->_consumerKey = $consumerKey;
-            $this ->_consumerSecret = $consumerSecret;
-            $this ->_tokenSecret = $tokenSecret;
-            $this ->_token = $token;
+        public function __construct($bearerToken, $consumerKey, $consumerSecret, $token='', $tokenSecret=''){
+            $this->_bearerToken = $bearerToken;
+            $this->_consumerKey = $consumerKey;
+            $this->_consumerSecret = $consumerSecret;
+            $this->_tokenSecret = $tokenSecret;
+            $this->_token = $token;
         }
 
         public function getAcces($callbackUrl){
@@ -79,6 +82,24 @@
             );
         }
 
+        private function doRequest($method,$endpoint,$urlParams,$authorization){
+            $admin = new Administracion($this->_bearerToken, $this->_consumerKey, $this->_consumerSecret, $this->_token, $this->_tokenSecret);
+            $authorization = $admin->doAuthorization($method,$endpoint,$urlParams,$authorization);
+            $apiParams = $admin->getApiParams($method,$endpoint,$urlParams,$authorization);
+            $apiResponse = $this->makeApiCall($apiParams);
+            die();
+            $apiParams = array( 
+                'method' => $method,
+                'endpoint' => $endpoint,
+                'authorization' => "Authorization: Bearer ".$this->_bearerToken,
+                'url_params' => array(
+                    'exclude' => 'retweets,replies',
+                    'start_time' => '2015-01-01T00:00:00.000Z',//getYesterday(),
+                    'end_time' => date('Y-m-d', time()) . 'T00:00:00.000Z'
+                    ) 
+                );
+        }
+
 
         /**
         *Take the publics metrics of a user
@@ -88,6 +109,7 @@
         *@return listed_count
         */
         public function getPublicMetrics($usuario){
+           
             $method = 'GET';
             $endpoint = self::TWITER_API_DOMAIN .'2/users/by' ;
             $apiParams = array( 
@@ -108,6 +130,7 @@
         }
 
         public function getTweetsLastDay($id_usuario){
+            $this->doRequest('GET','papa',array(),self::AUTH2);
             $method = 'GET';
             $endpoint = self::TWITER_API_DOMAIN .'2/users/'.$id_usuario.'/tweets' ;
             $apiParams = array( 

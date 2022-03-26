@@ -4,15 +4,62 @@
         const TWITTER_API_DOMAIN = 'https://api.twitter.com/';
         const TWITTER_API_VERSION = '1.1';
 
+        private $_bearerToken;
         private $_consumerKey;
         private $_consumerSecret;
         private $_tokenSecret;
+        private $_token;
 
-        public function __construct($consumerKey, $consumerSecret, $tokenSecret = ''){
-            $this ->_consumerKey = $consumerKey;
-            $this ->_consumerSecret = $consumerSecret;
-            $this ->_tokenSecret = $tokenSecret;
+        public function __construct($bearerToken, $consumerKey, $consumerSecret, $token='', $tokenSecret=''){
+            //parent::__construct($bearerToken, $consumerKey, $consumerSecret, $token, $tokenSecret);
+            $this->_bearerToken = $bearerToken;
+            $this->_consumerKey = $consumerKey;
+            $this->_consumerSecret = $consumerSecret;
+            $this->_tokenSecret = $tokenSecret;
+            $this->_token = $token;
         }
+
+        public function doAuthorization($method,$endpoint,$urlParams,$authorization){
+            try{
+                if(($authorization != parent::AUTH1) AND ($authorization != parent::AUTH2)){
+                    throw new Exception("Invalid authorization");
+                }
+            }catch(Exception $e){
+                echo $e->getMessage() . ' in '. $e->getFile() . ' Line ' . $e->getLine();
+                die();
+            }
+            return ($authorization == self::AUTH1) ? $this->createOAuth1($method,$endpoint,$urlParams) : $this->createOAuth2();
+        }
+
+
+        private function createOAuth1($method,$endpoint,$urlParams){
+            $authorizationParams = array( 
+                'oauth_consumer_key' => $this->_consumerKey, 
+                'oauth_nonce' => md5( microtime() . mt_rand() ), 
+                'oauth_signature_method' => 'HMAC-SHA1', 
+                'oauth_timestamp' => time(),
+                'oauth_version' => '1.0' 
+            );
+            (!empty($this->_token)) ? $authorizationParams['oauth_token'] = $this->_token : '';
+            $authorizationParams['oauth_signature'] = $this->getSignature( $method, $endpoint, $authorizationParams, $urlParams);
+            return $this->getAuthorizationString( $authorizationParams ); 
+        }
+
+        private function createOAuth2() {
+            return "Authorization: Bearer ".$this->_bearerToken; 
+        }
+
+        public function getApiParams($method,$endpoint,$urlParams,$authorization){
+            return array( 
+                'method' => $method,
+                'endpoint' => $endpoint,
+                'authorization' => $authorization,
+                'url_params' => $urlParams
+                );
+        }
+        
+
+
 
         public function getSignature( $method, $endpoint, $authorizationParams, $urlParams = array() ) {
 			$authorizationParams = array_merge( $authorizationParams, $urlParams );
@@ -62,7 +109,7 @@
                 'oauth_consumer_key' => $this->_consumerKey, 
                 'oauth_nonce' => md5( microtime() . mt_rand() ), 
                 'oauth_signature_method' => 'HMAC-SHA1', 
-                'oauth_timestamp' => time(), 
+                'oauth_timestamp' => time(),
                 'oauth_version' => '1.0' 
             );
             $authorizationParams['oauth_signature'] = $this->getSignature( $method, $endpoint, $authorizationParams );

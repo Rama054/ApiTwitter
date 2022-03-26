@@ -17,7 +17,7 @@
     $usuario = $fila['Usuario'];
     $id_Usuario = $fila['Id_Usuario'];   
     
-    $apiTwitter = new ApiTwitter(BEARER_TOKEN,CONSUMER_KEY,CONSUMER_SECRET,$tokenSecret,$token);
+    $apiTwitter = new ApiTwitter(BEARER_TOKEN,CONSUMER_KEY,CONSUMER_SECRET,$token,$tokenSecret);
     $apiTwitter->getTweetsLastDay('2329495967');
     echo "<pre>";
     print_r($apiTwitter->getPublicMetrics('rubiu5'));
