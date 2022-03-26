@@ -18,8 +18,10 @@
     $id_Usuario = $fila['Id_Usuario'];   
     
     $apiTwitter = new ApiTwitter(BEARER_TOKEN,CONSUMER_KEY,CONSUMER_SECRET,$token,$tokenSecret);
+    imprimirArray($apiTwitter->getPublicMetrics('Ramiro_lopez005'));
+    
     echo "<pre>";
-    print_r($apiTwitter->getOrganicMetrics($apiTwitter->getTweetsIdLastDay('2329495967')));
+    //print_r($apiTwitter->getOrganicMetrics($apiTwitter->getTweetsIdLastDay('2329495967')));
     die();
 
       //'2329495967'

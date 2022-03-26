@@ -96,15 +96,22 @@
         *@return tweet_count
         *@return listed_count
         */
-        public function getPublicMetrics($user_name){
+        public function getPublicMetrics($userNameList){
             $endpoint = self::TWITER_API_DOMAIN .'2/users/by' ;
             $urlParams = array(
-                'usernames' => $user_name,
-                'user.fields' => 'public_metrics,location'
+                'usernames' => commaSeparated($userNameList),
+                'user.fields' => 'public_metrics'
             );
             $dataUser = $this->doRequest('GET',$endpoint,$urlParams,self::AUTH2); 
             $apiResponse = removeHeader($dataUser);
-            return $apiResponse;
+            $usersMetrics = array();
+            foreach($apiResponse['data'] as $dato){
+                array_push($usersMetrics,array(
+                    'username' => $dato['username'],
+                    'public_metrics' => $dato['public_metrics'])
+                );
+            }
+            return $usersMetrics;
         }
 
         /**

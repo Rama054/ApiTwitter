@@ -9,7 +9,7 @@
     }
 
     function commaSeparated($list){
-        return implode(",", $list);
+        return (is_string($list)) ? $list : implode(",", $list);
     }
 
     function removeHeader($apiResponse){

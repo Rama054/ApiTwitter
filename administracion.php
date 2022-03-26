@@ -31,7 +31,6 @@
             return ($authorization == self::AUTH1) ? $this->createOAuth1($method,$endpoint,$urlParams) : $this->createOAuth2();
         }
 
-
         private function createOAuth1($method,$endpoint,$urlParams){
             $authorizationParams = array( 
                 'oauth_consumer_key' => $this->_consumerKey, 
