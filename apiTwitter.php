@@ -6,7 +6,6 @@
     require 'funciones.php';
 
     class ApiTwitter{
-        //const TWITER_ID_DOMAIN = 'https://id.twitch.tv/';
         const TWITER_API_DOMAIN = 'https://api.twitter.com/';
         const AUTH1 = 'OAuth 1.0a'; //user context 
         const AUTH2 = 'OAuth 2.0';  //app-only
@@ -30,8 +29,6 @@
             $data = $admin->getRequestToken($callbackUrl);
             echo $admin->makeAuthorize($data);
             return;
-
-
         }
         
         public function makeApiCall( $apiParams ) {
@@ -87,309 +84,105 @@
             $authorization = $admin->doAuthorization($method,$endpoint,$urlParams,$authorization);
             $apiParams = $admin->getApiParams($method,$endpoint,$urlParams,$authorization);
             $apiResponse = $this->makeApiCall($apiParams);
-            die();
-            $apiParams = array( 
-                'method' => $method,
-                'endpoint' => $endpoint,
-                'authorization' => "Authorization: Bearer ".$this->_bearerToken,
-                'url_params' => array(
-                    'exclude' => 'retweets,replies',
-                    'start_time' => '2015-01-01T00:00:00.000Z',//getYesterday(),
-                    'end_time' => date('Y-m-d', time()) . 'T00:00:00.000Z'
-                    ) 
-                );
+            return $apiResponse;
         }
 
 
         /**
-        *Take the publics metrics of a user
+        *Get the publics metrics of a user
+        *@param user_name
         *@return followers_count
         *@return following_count
         *@return tweet_count
         *@return listed_count
         */
-        public function getPublicMetrics($usuario){
-           
-            $method = 'GET';
+        public function getPublicMetrics($user_name){
             $endpoint = self::TWITER_API_DOMAIN .'2/users/by' ;
-            $apiParams = array( 
-                'method' => $method,
-                'endpoint' => $endpoint,
-                'authorization' => "Authorization: Bearer ".$this->_bearerToken,
-                'url_params' => array(
-                    'usernames' => $usuario,
-                    'user.fields' => 'public_metrics',
-                    ) 
-                );
-            
-            $dataUser = $this->makeApiCall($apiParams);    
-            $responseParts = explode("\r\n\r\n",$dataUser['api_data']);
-            $responseBody = array_pop( $responseParts );
-            $apiResponse = json_decode($responseBody,true);
-            return $apiResponse;//['data'][0]['public_metrics'];
+            $urlParams = array(
+                'usernames' => $user_name,
+                'user.fields' => 'public_metrics,location'
+            );
+            $dataUser = $this->doRequest('GET',$endpoint,$urlParams,self::AUTH2); 
+            $apiResponse = removeHeader($dataUser);
+            return $apiResponse;
         }
 
-        public function getTweetsLastDay($id_usuario){
-            $this->doRequest('GET','papa',array(),self::AUTH2);
-            $method = 'GET';
-            $endpoint = self::TWITER_API_DOMAIN .'2/users/'.$id_usuario.'/tweets' ;
-            $apiParams = array( 
-                'method' => $method,
-                'endpoint' => $endpoint,
-                'authorization' => "Authorization: Bearer ".$this->_bearerToken,
-                'url_params' => array(
-                    'exclude' => 'retweets,replies',
-                    'start_time' => '2015-01-01T00:00:00.000Z',//getYesterday(),
-                    'end_time' => date('Y-m-d', time()) . 'T00:00:00.000Z'
-                    ) 
-                );
-            $dataUser = $this->makeApiCall($apiParams);   
+        /**
+        *Get tweets in a time interval
+        *@param user_id
+        *@return tweets_ids
+        */
+        public function getTweetsIdLastDay($id_user){
+            $endpoint = self::TWITER_API_DOMAIN .'2/users/'.$id_user.'/tweets' ;
+            $urlParams = array(
+                'exclude' => 'retweets,replies',
+                'start_time' => '2015-01-01T00:00:00.000Z',//getYesterday(),
+                'end_time' => date('Y-m-d', time()) . 'T00:00:00.000Z'
+            );
+            $dataUser = $this->doRequest('GET',$endpoint,$urlParams,self::AUTH2);
             $apiResponse = removeHeader($dataUser);
-            
-            $pepe = array();
+            $tweetsIds = array();
             foreach($apiResponse['data'] as $dato){
-                array_push($pepe,$dato['id']);
-                
+                array_push($tweetsIds,$dato['id']);
             }
-            echo '<pre>';
-            print_r($pepe);
-            $this->getTweetMetrics($pepe);
-            
-            
+            return $tweetsIds;     
         }
 
-        public function getTweetMetrics($list){
-            //funcion(metodo,endpoint,params,authoritation)
-            $method = 'GET';
+        /**
+        *Get public metrics of a list of tweets 
+        *@param tweets_ids
+        *@return public_metrics
+        */
+        public function getTweetMetrics($listTweetsIds){
             $endpoint = self::TWITER_API_DOMAIN .'2/tweets';
-            $apiParams = array( 
-                'method' => $method,
-                'endpoint' => $endpoint,
-                'authorization' => "Authorization: Bearer ".$this->_bearerToken,
-                'url_params' => array(
-                    'ids' => commaSeparated($list),
-                    'tweet.fields' => 'public_metrics'
-                    )
-                ); 
-            $dataUser = $this->makeApiCall($apiParams);  
+            $urlParams = array(
+                'ids' => commaSeparated($listTweetsIds),
+                'tweet.fields' => 'public_metrics'
+            );
+            $dataUser = $this->doRequest('GET',$endpoint,$urlParams,self::AUTH2);
             $apiResponse = removeHeader($dataUser);
             
-            $pepe = array();
+            $tweetsMetrics = array();
             foreach($apiResponse['data'] as $dato){
-                array_push($pepe,array(
+                array_push($tweetsMetrics,array(
                     'id' => $dato['id'],
                     'public_metrics' => $dato['public_metrics'])
                 );
-                
             }
+            return $tweetsMetrics;
+        }
 
-
-            echo '<pre>';
-            print_r($pepe);
-            die();
+        /**
+        *Get organic metrics of a list of tweets 
+        *@param tweets_ids
+        *@return organic_metrics
+        */
+        public function getOrganicMetrics($listTweetsIds){
+            $endpoint = self::TWITER_API_DOMAIN .'2/tweets';
+            $urlParams = array(
+                'ids' => commaSeparated($listTweetsIds),
+                'tweet.fields' => 'organic_metrics'
+            );
+            $dataUser = $this->doRequest('GET',$endpoint,$urlParams,self::AUTH1);
+            $apiResponse = removeHeader($dataUser);
+            $tweetsMetrics = array();
+            foreach($apiResponse['data'] as $dato){
+                array_push($tweetsMetrics,array(
+                    'id' => $dato['id'],
+                    'organic_metrics' => $dato['organic_metrics'])
+                );
+            }
+            return $tweetsMetrics;   
         }
 
        
 
-        public function consultarVistasTwitter($id_usuario){
-            $method = 'GET';
-            $endpoint = self::TWITER_API_DOMAIN .'2/users/'.$id_usuario.'tweets' ;
-            $apiParams = array( 
-                'method' => $method,
-                'endpoint' => $endpoint,
-                'authorization' => "Authorization: Bearer ".$this->_bearerToken,
-                'url_params' => array(
-                    'usernames' => $usuario,
-                    'expansions' => 'pinned_tweet_id',
-                    ) 
-                );
-            
-            $dataUser = $this->makeApiCall($apiParams);    
-            $responseParts = explode("\r\n\r\n",$dataUser['api_data']);
-            $responseBody = array_pop( $responseParts );
-            $apiResponse = json_decode($responseBody,true);
-            echo "<pre>";
-            print_r($apiResponse);
-            $idTweet = $apiResponse['includes']['tweets'][0]['id'];
-            $endpoint = self::TWITER_API_DOMAIN .'2/tweets/'.$idTweet;
-            
-            $urlParams = array( // url params for endpoint
-                'tweet.fields' => 'organic_metrics,non_public_metrics',
-			);
-            
-            $authorizationParams = array( 
-                'oauth_consumer_key' => $this->_consumerKey, 
-                'oauth_nonce' => md5( microtime() . mt_rand() ), 
-                'oauth_signature_method' => 'HMAC-SHA1', 
-                'oauth_timestamp' => time(),
-                'oauth_token' => $this->_token,
-                'oauth_version' => '1.0' 
-            );
-            $admin = new Administracion($this->_consumerKey, $this->_consumerSecret, $this->_tokenSecret);
-            $authorizationParams['oauth_signature'] = $admin->getSignature( $method, $endpoint, $authorizationParams, $urlParams);
-
-
-            $apiParams = array( 
-                'method' => $method,
-                'endpoint' => $endpoint,
-                'authorization' => $admin->getAuthorizationString( $authorizationParams ),
-                'url_params' => $urlParams
-            );
-            $dataUser = $this->makeApiCall($apiParams);
-            echo "<pre>";
-            print_r($dataUser);
-           
-            die();
-            return $dataUser;
-        }
+        
 
         
     }
 
     
-
-
-
-
-
-    /* if( isset( $_GET['oauth_token'] ) && isset( $_GET['oauth_verifier'] )){
-        $admin = new Administracion(CONSUMER_KEY,CONSUMER_SECRET);
-        $tokens = $admin->getAccessToken($_GET['oauth_token'],$_GET['oauth_verifier']);
-        $_SESSION['oauth_token'] = $tokens['oauth_token'];		
-		$_SESSION['oauth_token_secret'] = $tokens['oauth_token_secret'];
-        $_SESSION['screen_name'] = $tokens['screen_name'];
-        $_SESSION['user_id'] = $tokens['user_id'];
-        $apiTwitter = new ApiTwitter(BEARER_TOKEN,CONSUMER_KEY,CONSUMER_SECRET,$_SESSION['oauth_token_secret'],$_SESSION['oauth_token']);
-        $apiTwitter->consultarVistasTwitter($_SESSION['screen_name']);
-
-
-    } */
-
-    /* $usuario = 'JMilei';
-
-    $apiTwitter = new ApiTwitter(BEARER_TOKEN,CONSUMER_KEY,CONSUMER_SECRET);
-    $apiTwitter->getAcces('http://localhost/APIsRedesSociales/Twitter');
-
-    $apiTwitter = new ApiTwitter(BEARER_TOKEN,CONSUMER_KEY,CONSUMER_SECRET);
-    //$data = $apiTwitter->consultarVistasTwitter($usuario);
-    $data = $apiTwitter->followsTwitter('Ramiro_lopez005');
-    
-    echo "<pre>";
-    print_r($data);
-    die();
-
-
-
-
-
-
-
-
-
-
-    
-    
-
-    $params = array(
-        'bearerToken' => 'AAAAAAAAAAAAAAAAAAAAABf4aAEAAAAALlOOS9ZTCuaxyu49wfkpgLFjzJc%3DiliUyQtS4BwNLWoSh4ZXOAvdYBhiQfIVcwNLoaeePX9hjH43XY',
-        'endPointURL' => 'https://api.twitter.com/2/users/by?usernames='.$usuario .'&user.fields=public_metrics'
-    );
-
-
-    function realizarPeticion($params){
-        $ch = curl_init();
-        $curlOptions = array(
-            CURLOPT_URL => $params['endPointURL'],
-            CURLOPT_RETURNTRANSFER=> true,
-            CURLOPT_HEADER => TRUE,    
-            CURLOPT_HTTPHEADER => array(
-                'Authorization: Bearer ' . $params['bearerToken']
-                //'Authorization: OAuth 2329495967-pi35JNkiaqR6OLC6HOOFEv0MO1gIQcF52rX1nyB'
-            )
-        );
-
-        curl_setopt_array($ch,$curlOptions);
-        $apiResponse = curl_exec($ch);
-        
-        $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        $apiResponseBody = substr($apiResponse, $headerSize);
-        $apiResponse = json_decode($apiResponseBody,true);
-        echo '<pre>';
-        print_r($apiResponse);
-        //echo curl_getinfo( $ch, CURLINFO_HTTP_CODE );
-        die();
-        if ( 200 == curl_getinfo( $ch, CURLINFO_HTTP_CODE ) ) { 
-            $status = 'ok';
-            $message = '';
-        } else {
-            $status = 'fail';
-            $message = isset( $response['errors'][0]['message'] ) ? $response['errors'][0]['message'] : 'Unauthorized';
-        }
-
-        curl_close($ch);
-        //return $apiResponse;
-        return array(
-            'status' => isset($apiResponse['status']) ? 'fail' : 'ok',
-            'message' => isset($apiResponse['message']) ? $apiResponse['message'] : '',
-            'api_data' => $apiResponse,
-            'endpoint' => $curlOptions[CURLOPT_URL]
-        ); 
-    }
-
-    function consultarFollowsTwitter($usuario){
-        $params = array(
-            'bearerToken' => 'AAAAAAAAAAAAAAAAAAAAABf4aAEAAAAALlOOS9ZTCuaxyu49wfkpgLFjzJc%3DiliUyQtS4BwNLWoSh4ZXOAvdYBhiQfIVcwNLoaeePX9hjH43XY',
-            'endPointURL' => 'https://api.twitter.com/2/users/by?usernames='.$usuario .'&tweet.fields=public_metrics'
-        );
-        $dataUser = realizarPeticion($params);   
-        return $dataUser['data'][0]['public_metrics']['followers_count'];
-    }
-
-    function consultarVistasTwitter($usuario){
-        $params = array(
-            'bearerToken' => 'AAAAAAAAAAAAAAAAAAAAABf4aAEAAAAALlOOS9ZTCuaxyu49wfkpgLFjzJc%3DiliUyQtS4BwNLWoSh4ZXOAvdYBhiQfIVcwNLoaeePX9hjH43XY',
-            'endPointURL' => 'https://api.twitter.com/2/users/by?usernames='.$usuario .'&expansions=pinned_tweet_id'
-        );
-         /* $dataUser = realizarPeticion($params);   
-        $idPinnedTweet = $dataUser['includes']['tweets']['0']['id'];
-        echo  $idPinnedTweet;  */
-        /* $params['endPointURL'] = 'https://api.twitter.com/2/tweets/1504605814769692676';
-        $dataPinnedTweet = realizarPeticion($params);  
-        
-        echo '<pre>';
-        print_r($dataPinnedTweet);
-        die(); */
-
-    //}
-   
-    //consultarVistasTwitter($usuario);
-
-    
-
- 
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
