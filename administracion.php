@@ -57,9 +57,6 @@
                 );
         }
         
-
-
-
         public function getSignature( $method, $endpoint, $authorizationParams, $urlParams = array() ) {
 			$authorizationParams = array_merge( $authorizationParams, $urlParams );
 			uksort( $authorizationParams, 'strcmp' );
@@ -169,30 +166,7 @@
                 return $tokens;
         }
 
-        /* public function invalidateToken(){
-            $method = 'POST';
-            $endpoint = 'https://api.twitter.com/oauth/invalidate_token';
-    
-            $authorizationParams = array( 
-                'oauth_consumer_key' => $this->_consumerKey, 
-                'oauth_nonce' => md5( microtime() . mt_rand() ), 
-                'oauth_signature_method' => 'HMAC-SHA1', 
-                'oauth_timestamp' => time(), 
-                'oauth_version' => '1.0' 
-            );
-            $authorizationParams['oauth_signature'] = $this->getSignature( $method, $endpoint, $authorizationParams );
-            
-            $apiParams = array( 
-                'method' => $method,
-                'endpoint' => $endpoint, 
-                'authorization' => $this->getAuthorizationString( $authorizationParams ), 
-                'url_params' => array() 
-            );
-            $data = $this->makeApiCall( $apiParams );
-            echo "<pre>";
-            print_r($data);
-            die();
-        } */
+        
 
 
 

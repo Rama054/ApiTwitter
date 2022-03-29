@@ -18,11 +18,18 @@
     $id_Usuario = $fila['Id_Usuario'];   
     
     $apiTwitter = new ApiTwitter(BEARER_TOKEN,CONSUMER_KEY,CONSUMER_SECRET,$token,$tokenSecret);
-    imprimirArray($apiTwitter->getPublicMetrics('Ramiro_lopez005'));
+    //imprimirArray($apiTwitter->getPublicMetrics(array('Ramiro_lopez005','jmilei')));
     
-    echo "<pre>";
-    //print_r($apiTwitter->getOrganicMetrics($apiTwitter->getTweetsIdLastDay('2329495967')));
-    die();
-
-      //'2329495967'
+    $intervalo = array(
+        'end' => getToday(),
+        'start' => getNow()
+    );
+    //echo $apiTwitter->getRecentTweets('jmilei',$intervalo);
+    //'2329495967' 4020276615  
+    //1508626483593449480
+    //1508602840670883841
+    //1508602744260624384
+    //imprimirArray($apiTwitter->getPublicMetrics('Ramiro_lopez005'));
+    imprimirArray($apiTwitter->getIdUser('milei55,ramiro_lopez005'));
+    
 ?>  
